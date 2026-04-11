@@ -74,20 +74,39 @@ All endpoints are served from `http://localhost:4000` and return JSON.
 |---|---|---|
 | `GET` | `/api/health` | Liveness probe — `{status, service}`. |
 | `GET` | `/api/quiz` | Returns 16 questions sampled from the 32-pool (4 per axis), shuffled. Option vectors are stripped — only `{id, axis, scenario, options:[{index, text}]}` is exposed. |
-| `POST` | `/api/submit` | Body: `{ "answers": [{ "questionId": "q1", "optionIndex": 0 }, ...] }`. Computes weighted vector sum, normalizes per axis pair, derives the 4-letter type code, looks up the matched pro archetype, and returns the full result (also stored in memory for retrieval). |
+| `POST` | `/api/submit` | Body: `{ "answers": [{ "questionId": "q1", "optionIndex": 0 }, ...] }`. Computes weighted vector sum, normalizes per axis pair, derives the 4-letter type code, looks up the matched pro archetype, and returns the full result. Results go to **MongoDB Atlas** when `MONGODB_URI` is loaded at startup (`backend/src/env.js` reads **repo-root** `.env.local` then **`backend/.env.local`** — backend file wins for duplicate keys; see `backend/src/store.js`). If `MONGODB_URI` is missing, data stays in an in-process `Map` until restart. On startup the server logs either `Results store: MongoDB (...)` or `in-memory`. |
 | `GET` | `/api/result/:id` | Retrieves a previously submitted result by its UUID — used for share links. 404 if unknown. |
-| `GET` | `/api/stats` | Type-code distribution counts so far (in-memory; resets on restart). Used by the future rarity feature. |
+| `GET` | `/api/stats` | Type-code distribution counts so far (MongoDB when configured; otherwise in-memory and lost on restart). Used by the future rarity feature. |
 
-Quick end-to-end check (with the backend running):
+Quick end-to-end check (with the backend running on the default port). Uses Node 18+ `fetch` to exercise **quiz → submit → result round-trip → stats** so persistence is covered whether you use Atlas or the in-memory store:
 
 ```bash
-# Pull a quiz, answer everything with option 0, submit, and inspect the type code.
-curl -s http://localhost:4000/api/quiz \
-  | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const o=JSON.parse(s);process.stdout.write(JSON.stringify({answers:o.questions.map(q=>({questionId:q.id,optionIndex:0}))}));})" \
-  | curl -s -X POST -H "Content-Type: application/json" -d @- http://localhost:4000/api/submit
+node --input-type=module -e '
+const base = "http://127.0.0.1:4000";
+const j = (r) => r.json();
+try {
+  const quiz = await fetch(base + "/api/quiz").then(j);
+  const body = { answers: quiz.questions.map((q) => ({ questionId: q.id, optionIndex: 0 })) };
+  const submit = await fetch(base + "/api/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).then(j);
+  
+  if (!submit.id) throw new Error("submit: missing id");
+  
+  const roundtrip = await fetch(base + "/api/result/" + submit.id).then(j);
+  const stats = await fetch(base + "/api/stats").then(j);
+  
+  console.log("✅ E2E OK:", { type: submit.typeCode, id: submit.id, total: stats.total });
+} catch (e) {
+  console.error("❌ Test Failed:", e.message);
+}
+'
+"
 ```
 
-Note: results are kept in an in-process `Map` for the MVP — restart wipes them. Persistence (SQLite/Redis) is a Milestone 2 task.
+Without `MONGODB_URI`, results and stats reset when the process restarts. With Atlas configured, the same flow confirms documents are written and read back from the database.
 
 ## Frontend routes
 
@@ -116,7 +135,9 @@ Dark "CS HUD" palette: near-black background (`#0b0b0d`), elevated panels (`#151
 
 ## Smoke test
 
-A scripted backend smoke test covers all four endpoints, randomness, scoring discrimination, result roundtrip, stats, and four edge cases (404, missing body, unknown questionId, bad optionIndex). Run with both servers stopped:
+A scripted backend smoke test covers all four endpoints, randomness, scoring discrimination, result roundtrip, stats, and four edge cases (404, missing body, unknown questionId, bad optionIndex). Run with both servers stopped.
+
+The block below is **bash** (macOS/Linux, **Git Bash**, or **WSL**). On **Windows PowerShell**, start the backend in one terminal (`cd backend; $env:PORT = '4002'; node src/index.js`), then in another run the same `node --input-type=module -e` script as in the quick e2e section with `$env:E2E_BASE = 'http://localhost:4002'` before `node`, and use `Invoke-WebRequest` or `curl.exe` instead of `curl` if needed.
 
 ```bash
 # from repo root
@@ -128,10 +149,24 @@ sleep 1
 curl -s http://localhost:4002/api/health
 # Quiz (16 questions, 4 per axis, vectors stripped)
 curl -s http://localhost:4002/api/quiz | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const o=JSON.parse(s);console.log('count:',o.questions.length)})"
-# End-to-end submit
-curl -s http://localhost:4002/api/quiz \
-  | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const o=JSON.parse(s);process.stdout.write(JSON.stringify({answers:o.questions.map(q=>({questionId:q.id,optionIndex:0}))}))})" \
-  | curl -s -X POST -H "Content-Type: application/json" -d @- http://localhost:4002/api/submit
+# End-to-end: submit, fetch /api/result/:id, /api/stats (matches quick e2e; respects MONGODB_URI if set)
+E2E_BASE=http://localhost:4002 node --input-type=module -e "
+const base = process.env.E2E_BASE || 'http://localhost:4000';
+const j = (r) => r.json();
+const quiz = await fetch(base + '/api/quiz').then(j);
+const body = { answers: quiz.questions.map((q) => ({ questionId: q.id, optionIndex: 0 })) };
+const submit = await fetch(base + '/api/submit', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(body),
+}).then(j);
+if (!submit.id) throw new Error('submit: missing id');
+const roundtrip = await fetch(base + '/api/result/' + submit.id).then(j);
+if (roundtrip.typeCode !== submit.typeCode) throw new Error('result: typeCode mismatch');
+const stats = await fetch(base + '/api/stats').then(j);
+if (typeof stats.total !== 'number' || stats.total < 1) throw new Error('stats: unexpected');
+console.log('e2e ok:', submit.typeCode, 'stats.total:', stats.total);
+"
 
 kill $SERVER_PID
 ```
