@@ -81,13 +81,25 @@ body {
 }
 
 .site-footer {
-  border-top: 1px solid var(--border);
-  padding: 1rem 0;
+  padding: 2rem 1rem;
   text-align: center;
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  color: var(--text-mute);
-  letter-spacing: 0.08rem;
+  border-top: 1px solid var(--border-color); /* 增加一条细线提升质感 */
+}
+
+.footer-status {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+  font-family: ui-monospace, monospace; /* 让版本号更有代码感 */
+}
+
+.disclaimer {
+  max-width: 600px;
+  margin: 0 auto;
+  font-size: 0.75rem; /* 字体要比主要内容小 */
+  line-height: 1.4;
+  color: #666; /* 降低对比度，不抢戏 */
+  opacity: 0.8;
 }
 
 /* ───── Generic page ───── */

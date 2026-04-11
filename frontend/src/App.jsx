@@ -20,7 +20,14 @@ export default function App() {
         </Routes>
       </main>
       <footer className="site-footer">
-        <span>v0.1 · MVP · No login</span>
+        <div className="footer-status">
+          <span>v0.1 Beta</span>
+        </div>
+        <p className="disclaimer">
+          Non-commercial Project: This is a fan-made project for entertainment purposes only. 
+          We do not own the rights to any player images or team logos used. 
+          All rights belong to their respective owners (e.g., HLTV, ESL, Teams).
+        </p>
       </footer>
     </div>
   );
