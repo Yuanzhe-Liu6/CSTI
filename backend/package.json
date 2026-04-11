@@ -1,0 +1,16 @@
+{
+  "name": "csti-backend",
+  "version": "0.1.0",
+  "description": "CSTI (Counter-Strike Type Indicator) backend API",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "uuid": "^10.0.0"
+  }
+}

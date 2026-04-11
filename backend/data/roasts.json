@@ -1,0 +1,55 @@
+{
+  "_comment": "Threshold-based roast lines triggered when normalized axis dominance >= 0.75. Used to inject 'pre-generated' personalized comments into the result page based on the user's 8-d raw scores.",
+  "lines": [
+    {
+      "id": "high_M_low_I",
+      "condition": { "M": ">=0.75", "I": "<=0.25" },
+      "text": "枪很硬，脑子不要也罢。"
+    },
+    {
+      "id": "high_I_low_M",
+      "condition": { "I": ">=0.75", "M": "<=0.25" },
+      "text": "战术大脑满级，可惜准星永远在飘。"
+    },
+    {
+      "id": "high_P_high_H",
+      "condition": { "P": ">=0.75", "H": ">=0.75" },
+      "text": "肾上腺素驱动型选手，开局就开冲，输赢全凭一口气。"
+    },
+    {
+      "id": "high_R_high_C",
+      "condition": { "R": ">=0.75", "C": ">=0.75" },
+      "text": "包点深位的活体雕像，敌人不撞枪口绝不主动现身。"
+    },
+    {
+      "id": "high_E_low_U",
+      "condition": { "E": ">=0.75", "U": "<=0.25" },
+      "text": "团队？我就是团队。资源全归我，输了也是队友的锅。"
+    },
+    {
+      "id": "high_U_low_E",
+      "condition": { "U": ">=0.75", "E": "<=0.25" },
+      "text": "默默扔闪、默默买枪、默默死亡，简历上写着'纯血绿叶'。"
+    },
+    {
+      "id": "high_H_low_C",
+      "condition": { "H": ">=0.75", "C": "<=0.25" },
+      "text": "情绪比手感先到，键盘比敌人先碎。"
+    },
+    {
+      "id": "high_C_low_H",
+      "condition": { "C": ">=0.75", "H": "<=0.25" },
+      "text": "心率永远低于60，被爆头瞬间面无表情。"
+    },
+    {
+      "id": "high_P_low_R",
+      "condition": { "P": ">=0.75", "R": "<=0.25" },
+      "text": "守包点？不存在的，最好的防守就是直接冲到对方家门口。"
+    },
+    {
+      "id": "high_R_low_P",
+      "condition": { "R": ">=0.75", "P": "<=0.25" },
+      "text": "你不动，敌人也不动；敌人一动，你就杀掉敌人。"
+    }
+  ]
+}
