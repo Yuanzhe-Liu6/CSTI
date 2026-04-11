@@ -4,10 +4,13 @@ const AXES = ['PR', 'MI', 'EU', 'CH'];
 const LETTERS = { PR: ['P', 'R'], MI: ['M', 'I'], EU: ['E', 'U'], CH: ['C', 'H'] };
 const DIMS = ['P', 'R', 'M', 'I', 'E', 'U', 'C', 'H'];
 
+/** How many scenarios to draw from each axis pool (4 axes → 20 total). */
+export const QUESTIONS_PER_AXIS = 5;
+
 const emptyScores = () => Object.fromEntries(DIMS.map((d) => [d, 0]));
 
 /**
- * Sample 16 questions: 4 per axis from the 32-question pool.
+ * Sample 20 questions: 5 per axis from the 32-question pool.
  * Returns the public-facing shape (no vectors leaked).
  */
 const byAxis = (() => {
@@ -21,7 +24,7 @@ export function sampleQuiz() {
   for (const axis of AXES) {
     const pool = byAxis.get(axis).slice();
     shuffle(pool);
-    picked.push(...pool.slice(0, 4));
+    picked.push(...pool.slice(0, QUESTIONS_PER_AXIS));
   }
   shuffle(picked);
   return picked.map((q) => ({

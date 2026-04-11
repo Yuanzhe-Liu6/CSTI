@@ -73,7 +73,7 @@ All endpoints are served from `http://localhost:4000` and return JSON.
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/api/health` | Liveness probe — `{status, service}`. |
-| `GET` | `/api/quiz` | Returns 16 questions sampled from the 32-pool (4 per axis), shuffled. Option vectors are stripped — only `{id, axis, scenario, options:[{index, text}]}` is exposed. |
+| `GET` | `/api/quiz` | Returns 20 questions sampled from the 32-pool (5 per axis), shuffled. Option vectors are stripped — only `{id, axis, scenario, options:[{index, text}]}` is exposed. |
 | `POST` | `/api/submit` | Body: `{ "answers": [{ "questionId": "q1", "optionIndex": 0 }, ...] }`. Computes weighted vector sum, normalizes per axis pair, derives the 4-letter type code, looks up the matched pro archetype, and returns the full result. Results go to **MongoDB Atlas** when `MONGODB_URI` is loaded at startup (`backend/src/env.js` reads **repo-root** `.env.local` then **`backend/.env.local`** — backend file wins for duplicate keys; see `backend/src/store.js`). If `MONGODB_URI` is missing, data stays in an in-process `Map` until restart. On startup the server logs either `Results store: MongoDB (...)` or `in-memory`. |
 | `GET` | `/api/result/:id` | Retrieves a previously submitted result by its UUID — used for share links. 404 if unknown. |
 | `GET` | `/api/stats` | Type-code distribution counts so far (MongoDB when configured; otherwise in-memory and lost on restart). Used by the future rarity feature. |
@@ -115,7 +115,7 @@ The SPA is mounted at `http://localhost:5173` and uses `react-router-dom` v6.
 | Route | Page | Purpose |
 |---|---|---|
 | `/` | Landing | Intro copy + "Start" button. |
-| `/quiz` | Quiz | Fetches `/api/quiz`, walks through 16 questions one at a time, posts to `/api/submit`, then redirects to `/result/:id`. |
+| `/quiz` | Quiz | Fetches `/api/quiz`, walks through 20 questions one at a time, posts to `/api/submit`, then redirects to `/result/:id`. |
 | `/result/:id` | Result | Renders the type code, archetype/pro/tagline/roast, per-axis dominance bars, and any triggered personalized roasts. Reuses router state when available, otherwise fetches `/api/result/:id`. |
 | `*` | NotFound | 404 fallback. |
 
@@ -147,7 +147,7 @@ sleep 1
 
 # Health
 curl -s http://localhost:4002/api/health
-# Quiz (16 questions, 4 per axis, vectors stripped)
+# Quiz (20 questions, 5 per axis, vectors stripped)
 curl -s http://localhost:4002/api/quiz | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const o=JSON.parse(s);console.log('count:',o.questions.length)})"
 # End-to-end: submit, fetch /api/result/:id, /api/stats (matches quick e2e; respects MONGODB_URI if set)
 E2E_BASE=http://localhost:4002 node --input-type=module -e "
@@ -185,7 +185,7 @@ For the frontend, a manual smoke run covers what the script can't:
 1. `cd backend && npm run dev`
 2. `cd frontend && npm run dev` (in another terminal)
 3. Open <http://localhost:5173>
-4. Click **开始测试 / Start** → answer all 16 questions → **提交 / Submit**
+4. Click **开始测试 / Start** → answer all 20 questions → **提交 / Submit**
 5. On the result page, verify: type code, archetype, radar, axis bars, and personalized roasts render correctly
 6. Click **下载海报 / Poster** → a `csti-XXXX-xxxxxxxx.png` should download
 7. Copy the result URL into a new tab → page rehydrates from `/api/result/:id` (no router state)
@@ -215,4 +215,4 @@ The full design doc lives at [`CS 玩家风格测试设计文档.pdf`](CS%20玩�
 
 - **4 binary axes:** P/R (Proactive vs Reactive), M/I (Mechanics vs Intelligence), E/U (Ego vs Utility), C/H (Chilled vs Hyped)
 - **16 archetypes:** each 4-letter combo maps to a famous pro player (donk = PMEH, device = RIUC, etc.)
-- **MVP scoring:** weighted vector sum over 16 questions sampled from a 32-question bank (4 per axis)
+- **MVP scoring:** weighted vector sum over 20 questions sampled from a 32-question bank (5 per axis)

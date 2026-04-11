@@ -10,6 +10,11 @@ export default function Result() {
   const [result, setResult] = useState(location.state?.result ?? null);
   const [error, setError] = useState(null);
 
+  function proAvatarSrc(pro) {
+    const file = `${pro}.webp`;
+    return `/archetypes/${file}`;
+  }
+
   useEffect(() => {
     if (result) return;
     fetchResult(id)
@@ -24,11 +29,23 @@ export default function Result() {
 
   return (
     <div className="page page-result">
+      <p className="result-eyebrow">我的 CSTI 类型</p>
       <p className="result-code">{typeCode}</p>
       {archetype && (
         <>
+          <div className="player-avatar-wrap">
+            <img
+              className="player-avatar"
+              src={proAvatarSrc(archetype.pro)}
+              alt=""
+              width={534}
+              height={534}
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
           <h1 className="result-title">{archetype.title}</h1>
-          <p className="result-pro">≈ {archetype.pro}</p>
+          <p className="result-pro">代表人物：{archetype.pro}</p>
           <p className="result-tagline">{archetype.tagline}</p>
           <p className="result-roast">"{archetype.roast}"</p>
         </>
@@ -38,7 +55,7 @@ export default function Result() {
         <h3>八维雷达 / 8-D Radar</h3>
         <AxisRadar normalized={normalized} />
 
-        <h3>轴线得分 / Axis Dominance</h3>
+        <h3>轴线得分</h3>
         <ul className="axis-bars">
           {[
             ['P', 'R'],
@@ -64,7 +81,7 @@ export default function Result() {
 
       {personalRoasts?.length > 0 && (
         <section className="personal-roasts">
-          <h3>个性化吐槽 / Personalized Roasts</h3>
+          <h3>深度行为解析</h3>
           <ul>
             {personalRoasts.map((line, i) => (
               <li key={i}>{line}</li>
@@ -78,7 +95,7 @@ export default function Result() {
         <Link to="/quiz" className="btn">再测一次</Link>
         <ResultPoster result={result} />
       </div>
-      <p className="share-hint">分享链接 / Share: <code>{window.location.href}</code></p>
+      <p className="share-hint">分享链接: <code>{window.location.href}</code></p>
     </div>
   );
 }

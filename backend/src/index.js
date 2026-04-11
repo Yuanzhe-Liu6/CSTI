@@ -16,7 +16,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'csti-backend' });
 });
 
-// GET /api/quiz — return 16 sampled questions (4 per axis), no vectors leaked.
+// GET /api/quiz — return 20 sampled questions (5 per axis), no vectors leaked.
 app.get('/api/quiz', (req, res) => {
   res.json({ questions: sampleQuiz() });
 });
