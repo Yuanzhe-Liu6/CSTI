@@ -53,13 +53,17 @@ export async function saveResult(result) {
     normalized: result.normalized,
     archetype: result.archetype,
     personalRoasts: result.personalRoasts,
+    answers: result.answers,
   });
   return result;
 }
 
 export async function getResult(id) {
   if (USE_MEMORY) {
-    return results.get(id) ?? null;
+    const stored = results.get(id);
+    if (!stored) return null;
+    const { answers: _a, ...pub } = stored;
+    return pub;
   }
   const col = await getCollection();
   const doc = await col.findOne({ _id: id });

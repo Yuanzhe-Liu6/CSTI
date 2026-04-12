@@ -41,7 +41,18 @@ app.post('/api/submit', async (req, res) => {
     return res.status(400).json({ error: 'answers must be a non-empty array' });
   }
   try {
-    const scored = scoreAnswers(answers);
+    const normalizedAnswers = answers.map((a, i) => {
+      if (a == null || typeof a !== 'object') {
+        throw new Error(`Invalid answer at index ${i}`);
+      }
+      const questionId = String(a.questionId);
+      const optionIndex = Number(a.optionIndex);
+      if (!Number.isInteger(optionIndex) || optionIndex < 0) {
+        throw new Error(`Invalid optionIndex for ${questionId}`);
+      }
+      return { questionId, optionIndex };
+    });
+    const scored = scoreAnswers(normalizedAnswers);
     const id = randomUUID();
     const record = {
       id,
@@ -51,9 +62,11 @@ app.post('/api/submit', async (req, res) => {
       normalized: scored.normalized,
       archetype: scored.archetype,
       personalRoasts: scored.personalRoasts,
+      answers: normalizedAnswers,
     };
     await saveResult(record);
-    res.json(record);
+    const { answers: _storedAnswers, ...publicRecord } = record;
+    res.json(publicRecord);
   } catch (err) {
     let message = err.message;
     if (/querySrv ENOTFOUND|ENOTFOUND _mongodb\._tcp/i.test(message)) {
