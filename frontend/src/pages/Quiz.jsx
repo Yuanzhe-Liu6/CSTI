@@ -55,12 +55,6 @@ export default function Quiz() {
     <div className="page page-quiz">
       <div className="quiz-header">
         <span className="progress">{idx + 1} / {total}</span>
-        <div className="quiz-header-right">
-          <span className="axis-tag">{q.axis}</span>
-          <Link to="/axes" className="quiz-axes-hint">
-            轴线说明
-          </Link>
-        </div>
       </div>
       <div className="progress-bar">
         <div

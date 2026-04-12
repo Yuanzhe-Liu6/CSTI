@@ -4,7 +4,20 @@ import cors from 'cors';
 import { randomUUID } from 'node:crypto';
 
 import { sampleQuiz, scoreAnswers } from './scoring.js';
-import { saveResult, getResult, getStats } from './store.js';
+import { saveResult, getResult, getStats, saveFeedback } from './store.js';
+
+const FEEDBACK_TAGS = new Set([
+  '文案扎心',
+  'UI很酷',
+  '梗很地道',
+  '老玩家表示很亲切',
+  '测试太长',
+  '测试太短',
+  '想要更多选手',
+  'UI有Bug',
+]);
+/** 与前端「结果符合度」三选一一致：hit / partial / miss */
+const FEEDBACK_VIBES = new Set(['hit', 'partial', 'miss']);
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -61,6 +74,45 @@ app.get('/api/result/:id', async (req, res) => {
 // GET /api/stats — type distribution stub for future rarity calc.
 app.get('/api/stats', async (req, res) => {
   res.json(await getStats());
+});
+
+// POST /api/feedback — user survey after seeing a result.
+app.post('/api/feedback', async (req, res) => {
+  const body = req.body ?? {};
+  const stars = Number(body.stars);
+  if (!Number.isInteger(stars) || stars < 1 || stars > 5) {
+    return res.status(400).json({ error: '评分必须为1到5星' });
+  }
+  const vibe = body.vibe;
+  if (typeof vibe !== 'string' || !FEEDBACK_VIBES.has(vibe)) {
+    const allowed = [...FEEDBACK_VIBES].join('、');
+    return res.status(400).json({ error: `结果符合度无效，可选：${allowed}` });
+  }
+  const tags = Array.isArray(body.tags) ? body.tags : [];
+  if (tags.some((t) => typeof t !== 'string' || !FEEDBACK_TAGS.has(t))) {
+    return res.status(400).json({ error: '标签不存在' });
+  }
+  let resultId = body.resultId;
+  if (resultId != null && typeof resultId !== 'string') {
+    return res.status(400).json({ error: 'Invalid resultId' });
+  }
+  if (resultId === '') resultId = undefined;
+  const comment = typeof body.comment === 'string' ? body.comment : '';
+  if (comment.length > 200) {
+    return res.status(400).json({ error: '评论最多200个字符' });
+  }
+  try {
+    const out = await saveFeedback({
+      resultId: resultId ?? null,
+      stars,
+      vibe,
+      tags,
+      comment,
+    });
+    res.json(out);
+  } catch (err) {
+    res.status(500).json({ error: err.message ?? '保存反馈失败' });
+  }
 });
 
 app.listen(PORT, () => {

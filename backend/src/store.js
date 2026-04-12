@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { MongoClient } from 'mongodb';
 
 const USE_MEMORY = !process.env.MONGODB_URI;
@@ -5,6 +6,8 @@ const USE_MEMORY = !process.env.MONGODB_URI;
 /** In-memory fallback when MONGODB_URI is unset (local dev). */
 const results = new Map();
 const typeCounts = new Map();
+/** @type {Array<object>} */
+const feedbackMemory = [];
 
 let client;
 let mongoCollection;
@@ -70,6 +73,32 @@ export async function getResult(id) {
     archetype: doc.archetype,
     personalRoasts: doc.personalRoasts,
   };
+}
+
+/**
+ * Persist user feedback (like score, fit vibe, tags, optional comment). Optional resultId links to a quiz result.
+ */
+export async function saveFeedback(payload) {
+  const id = randomUUID();
+  const createdAt = new Date().toISOString();
+  const doc = {
+    _id: id,
+    createdAt,
+    resultId: payload.resultId ?? null,
+    stars: payload.stars,
+    vibe: payload.vibe,
+    tags: payload.tags ?? [],
+    comment: payload.comment ?? '',
+  };
+  if (USE_MEMORY) {
+    feedbackMemory.push(doc);
+    return { id, createdAt };
+  }
+  await getCollection();
+  const dbName = process.env.MONGODB_DB_NAME || 'csti';
+  const col = client.db(dbName).collection('feedback');
+  await col.insertOne(doc);
+  return { id, createdAt };
 }
 
 export async function getStats() {

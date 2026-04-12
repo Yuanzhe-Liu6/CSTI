@@ -12,3 +12,6 @@ export const submitAnswers = (answers) =>
 export const fetchResult = (id) =>
   client.get(`/result/${id}`).then((r) => r.data);
 export const fetchStats = () => client.get('/stats').then((r) => r.data);
+
+export const submitFeedback = (payload) =>
+  client.post('/feedback', payload).then((r) => r.data);

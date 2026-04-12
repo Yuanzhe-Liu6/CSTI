@@ -93,6 +93,9 @@ export default function Result() {
       <div className="result-actions">
         <Link to="/" className="btn">返回首页</Link>
         <Link to="/quiz" className="btn">再测一次</Link>
+        <Link to={`/feedback?result=${id}`} className="btn btn-feedback">
+          意见反馈
+        </Link>
         <ResultPoster result={result} />
       </div>
       <p className="share-hint">分享链接: <code>{window.location.href}</code></p>
