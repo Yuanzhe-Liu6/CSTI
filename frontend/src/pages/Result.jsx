@@ -4,11 +4,23 @@ import { fetchResult } from '../api.js';
 import AxisRadar from '../components/AxisRadar.jsx';
 import ResultPoster from '../components/ResultPoster.jsx';
 
+const AXIS_INFO = {
+  P: { label: 'Proactive 主动型', desc: '倾向于主动出击、带节奏、第一个冲进点位。你是进攻的发起者，喜欢用行动创造机会而非等待。' },
+  R: { label: 'Reactive 被动型', desc: '倾向于以逸待劳、等待对手犯错后精准反击。你是沉稳的防守者，擅长在对手露出破绽时致命一击。' },
+  M: { label: 'Mechanics 机械型', desc: '依赖纯粹的枪法、反应速度和肌肉记忆。你的武器是手速和准星，用操作碾压对手。' },
+  I: { label: 'Intelligence 智慧型', desc: '依赖地图理解、读局能力和战术执行。你的武器是大脑，用预判和策略取胜。' },
+  E: { label: 'Ego 自我型', desc: '以个人表现为核心驱动力，追求高光时刻和数据。你相信个人英雄主义能改变比赛走向。' },
+  U: { label: 'Utility 团队型', desc: '以团队利益为核心驱动力，甘愿牺牲数据为队友创造输出环境。你是默默付出的基石。' },
+  C: { label: 'Chilled 冷静型', desc: '情绪波动极小，无论顺逆风都保持冷酷的执行力。你是队伍的定海神针，稳定就是你的超能力。' },
+  H: { label: 'Hyped 激昂型', desc: '情绪充沛、激情四射，用能量感染全队。你的呐喊和激情是队伍士气的发动机。' },
+};
+
 export default function Result() {
   const { id } = useParams();
   const location = useLocation();
   const [result, setResult] = useState(location.state?.result ?? null);
   const [error, setError] = useState(null);
+  const [expandedAxis, setExpandedAxis] = useState(null);
 
   function proAvatarSrc(pro) {
     const file = `${pro}.webp`;
@@ -64,15 +76,35 @@ export default function Result() {
             ['C', 'H'],
           ].map(([a, b]) => {
             const pct = Math.round((normalized[a] ?? 0.5) * 100);
+            const axisKey = `${a}${b}`;
+            const isExpanded = expandedAxis === axisKey;
+            const dominant = pct >= 50 ? a : b;
             return (
-              <li key={a}>
-                <div className="axis-label">
-                  <span>{a} {raw[a]}</span>
-                  <span>{raw[b]} {b}</span>
+              <li key={a} className={`axis-item${isExpanded ? ' expanded' : ''}`}>
+                <div
+                  className="axis-label axis-label-clickable"
+                  onClick={() => setExpandedAxis(isExpanded ? null : axisKey)}
+                  title="点击查看维度说明"
+                >
+                  <span className={pct >= 50 ? 'axis-dominant' : ''}>{a} {raw[a]}</span>
+                  <span className="axis-tap-hint">{isExpanded ? '▾' : '▸'}</span>
+                  <span className={pct < 50 ? 'axis-dominant' : ''}>{raw[b]} {b}</span>
                 </div>
                 <div className="bar">
                   <div className="bar-fill" style={{ width: `${pct}%` }} />
                 </div>
+                {isExpanded && (
+                  <div className="axis-explain">
+                    <div className={`axis-explain-item${dominant === a ? ' highlight' : ''}`}>
+                      <strong>{AXIS_INFO[a].label}</strong>
+                      <p>{AXIS_INFO[a].desc}</p>
+                    </div>
+                    <div className={`axis-explain-item${dominant === b ? ' highlight' : ''}`}>
+                      <strong>{AXIS_INFO[b].label}</strong>
+                      <p>{AXIS_INFO[b].desc}</p>
+                    </div>
+                  </div>
+                )}
               </li>
             );
           })}

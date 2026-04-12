@@ -537,6 +537,149 @@ button:disabled {
   }
 }
 
+/* ───── Archetype Showcase (Landing) ───── */
+.archetype-showcase {
+  margin-top: 2.5rem;
+  text-align: left;
+}
+
+.showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.6rem;
+}
+
+.showcase-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.65rem 0.4rem;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+
+.showcase-card:hover {
+  border-color: var(--accent);
+  background: var(--bg-elev-2);
+  transform: translateY(-2px);
+}
+
+.showcase-card.active {
+  border-color: var(--accent);
+  background: rgba(245, 166, 35, 0.1);
+}
+
+.showcase-code {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.08rem;
+}
+
+.showcase-pro {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.showcase-detail {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.showcase-detail-inner {
+  position: relative;
+  background: var(--bg-elev);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  padding: 1.5rem;
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.showcase-close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.8rem;
+  background: none;
+  border: none;
+  color: var(--text-mute);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.showcase-close:hover {
+  color: var(--text);
+}
+
+.showcase-detail-avatar-wrap {
+  max-width: 200px;
+  margin: 0 auto 0.75rem;
+  background: #e8e4dc;
+  border-radius: 8px;
+  overflow: hidden;
+  line-height: 0;
+}
+
+.showcase-detail-avatar-wrap .player-avatar {
+  width: 100%;
+  height: auto;
+  max-width: 200px;
+}
+
+.showcase-detail-code {
+  font-family: var(--mono);
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: 0.4rem;
+  color: var(--accent);
+  margin: 0.25rem 0;
+  text-shadow: 0 0 20px rgba(245, 166, 35, 0.3);
+}
+
+.showcase-detail-title {
+  font-size: 1.3rem;
+  margin: 0.25rem 0;
+}
+
+.showcase-detail-pro {
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  margin: 0.25rem 0;
+}
+
+.showcase-detail-tagline {
+  color: var(--text-dim);
+  line-height: 1.6;
+  font-size: 0.9rem;
+  margin: 0.75rem 0 0;
+}
+
 /* ───── Quiz ───── */
 .quiz-header {
   display: flex;
@@ -732,6 +875,74 @@ button:disabled {
 .bar-fill {
   height: 100%;
   background: linear-gradient(90deg, var(--accent), var(--accent-hot));
+}
+
+/* Axis clickable labels & explanations */
+.axis-item {
+  transition: background 0.15s;
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+  margin: -0.5rem -0.6rem;
+  margin-bottom: 0;
+}
+
+.axis-item.expanded {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+}
+
+.axis-label-clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.axis-label-clickable:hover {
+  color: var(--accent);
+}
+
+.axis-tap-hint {
+  color: var(--text-mute);
+  font-size: 0.75rem;
+}
+
+.axis-dominant {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.axis-explain {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+  animation: fadeIn 0.15s ease;
+}
+
+.axis-explain-item {
+  padding: 0.5rem 0.7rem;
+  border-radius: 4px;
+  background: var(--bg-elev-2);
+  border-left: 3px solid var(--border);
+}
+
+.axis-explain-item.highlight {
+  border-left-color: var(--accent);
+}
+
+.axis-explain-item strong {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text);
+  margin-bottom: 0.25rem;
+}
+
+.axis-explain-item p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--text-dim);
 }
 
 .personal-roasts {
@@ -1136,6 +1347,27 @@ button:disabled {
 
   .option {
     padding: 0.85rem 0.9rem;
+  }
+
+  .showcase-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.45rem;
+  }
+
+  .showcase-card {
+    padding: 0.5rem 0.25rem;
+  }
+
+  .showcase-code {
+    font-size: 0.72rem;
+  }
+
+  .showcase-pro {
+    font-size: 0.65rem;
+  }
+
+  .showcase-detail-inner {
+    padding: 1.2rem;
   }
 
   .quiz-nav button,

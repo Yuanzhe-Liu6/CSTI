@@ -1,4 +1,8 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import archetypesData from '../data/archetypes.json';
+
+const archetypes = archetypesData.archetypes;
 
 /** 16 种原型四字母码：P/R × M/I × E/U × C/H（可按需调整顺序） */
 const ARCHETYPE_CODES = [
@@ -27,6 +31,8 @@ function CodeMarquee({ codes }) {
 }
 
 export default function Landing() {
+  const [selected, setSelected] = useState(null);
+
   return (
     <div className="page page-landing">
       <h1 className="landing-headline">
@@ -59,6 +65,44 @@ export default function Landing() {
           </span>
         ))}
       </p>
+
+      <section className="archetype-showcase">
+        <h3>16 种人格原型</h3>
+        <div className="showcase-grid">
+          {archetypes.map((a) => (
+            <button
+              key={a.code}
+              className={`showcase-card${selected?.code === a.code ? ' active' : ''}`}
+              onClick={() => setSelected(selected?.code === a.code ? null : a)}
+            >
+              <span className="showcase-code">{a.code}</span>
+              <span className="showcase-pro">{a.pro}</span>
+            </button>
+          ))}
+        </div>
+
+        {selected && (
+          <div className="showcase-detail" onClick={() => setSelected(null)}>
+            <div className="showcase-detail-inner" onClick={(e) => e.stopPropagation()}>
+              <button className="showcase-close" onClick={() => setSelected(null)}>✕</button>
+              <div className="showcase-detail-avatar-wrap">
+                <img
+                  className="player-avatar"
+                  src={`/archetypes/${selected.pro}.webp`}
+                  alt={selected.pro}
+                  width={534}
+                  height={534}
+                  loading="lazy"
+                />
+              </div>
+              <p className="showcase-detail-code">{selected.code}</p>
+              <h2 className="showcase-detail-title">{selected.title}</h2>
+              <p className="showcase-detail-pro">代表人物：{selected.pro}</p>
+              <p className="showcase-detail-tagline">{selected.tagline}</p>
+            </div>
+          </div>
+        )}
+      </section>
     </div>
   );
 }
