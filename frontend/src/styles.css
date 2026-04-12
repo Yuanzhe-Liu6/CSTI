@@ -208,7 +208,8 @@ button:disabled {
   font-weight: 800;
   line-height: 1.35;
   margin: 0.5rem auto 0;
-  max-width: 22rem;
+  /* em 随字号缩放：固定 22rem 时宽屏字变大仍被窄盒夹住会换行；min(100%) 避免横向溢出 */
+  max-width: min(100%, 21em);
   letter-spacing: 0.02rem;
 }
 
