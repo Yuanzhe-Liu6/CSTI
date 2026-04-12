@@ -77,6 +77,7 @@ All endpoints are served from `http://localhost:4000` and return JSON.
 | `POST` | `/api/submit` | Body: `{ "answers": [{ "questionId": "q1", "optionIndex": 0 }, ...] }`. Computes weighted vector sum, normalizes per axis pair, derives the 4-letter type code, looks up the matched pro archetype, and returns the full result. Results go to **MongoDB Atlas** when `MONGODB_URI` is loaded at startup (`backend/src/env.js` reads **repo-root** `.env.local` then **`backend/.env.local`** — backend file wins for duplicate keys; see `backend/src/store.js`). If `MONGODB_URI` is missing, data stays in an in-process `Map` until restart. On startup the server logs either `Results store: MongoDB (...)` or `in-memory`. |
 | `GET` | `/api/result/:id` | Retrieves a previously submitted result by its UUID — used for share links. 404 if unknown. |
 | `GET` | `/api/stats` | Type-code distribution counts so far (MongoDB when configured; otherwise in-memory and lost on restart). Used by the future rarity feature. |
+| `POST` | `/api/feedback` | Optional post-quiz survey: stars (1–5), vibe (`hit` / `partial` / `miss`), optional preset tags, optional `comment` (≤200 chars), optional `resultId`. When `MONGODB_URI` is set, documents go to the **`feedback`** collection; otherwise they are kept in memory until the process exits (`saveFeedback` in `backend/src/store.js`). |
 
 Quick end-to-end check (with the backend running on the default port). Uses Node 18+ `fetch` to exercise **quiz → submit → result round-trip → stats** so persistence is covered whether you use Atlas or the in-memory store:
 
@@ -114,9 +115,12 @@ The SPA is mounted at `http://localhost:5173` and uses `react-router-dom` v6.
 
 | Route | Page | Purpose |
 |---|---|---|
-| `/` | Landing | Intro copy + "Start" button. |
+| `/` | Landing | Intro copy, author credits, code marquee, link to `/axes`, primary CTA to `/quiz`. |
+| `/axes` | AxesLegend | Explains the four axis pairs and eight letters (P/R, M/I, E/U, C/H). |
+| `/feedback` | Feedback | Optional survey (stars, vibe, tags, short comment); POSTs to `/api/feedback`. Can open with `?result=` after a quiz. |
 | `/quiz` | Quiz | Fetches `/api/quiz`, walks through 20 questions one at a time, posts to `/api/submit`, then redirects to `/result/:id`. |
 | `/result/:id` | Result | Renders the type code, archetype/pro/tagline/roast, per-axis dominance bars, and any triggered personalized roasts. Reuses router state when available, otherwise fetches `/api/result/:id`. |
+| `/test/archetype-images` | ArchetypeImageTest | Dev helper for archetype imagery (not part of the main user flow). |
 | `*` | NotFound | 404 fallback. |
 
 Both servers must be running together — the Vite dev server proxies `/api/*` to the backend at `:4000`, so the frontend uses relative URLs only.
@@ -206,6 +210,18 @@ Implementation progress:
 - [x] **Step 5** — Styling & polish (CS dark theme, recharts radar, mobile responsive)
 - [x] **Step 6** — Result poster (client-side Canvas, PNG download)
 - [x] **Step 7** — End-to-end smoke test
+
+---
+
+## Disclaimer
+
+**Project nature.** This project exists for **personal learning** and **non-profit fan entertainment** only.
+
+**Copyright.** Professional player portraits, team logos, and related data used or referenced here remain the property of their **original rights holders** (for example HLTV, ESL, the respective teams, or photographers).
+
+**Content treatment.** Source materials may be **filtered or vectorized**. That processing is used **only** to demonstrate the scoring approach and to present personality-matching results in the UI.
+
+**Rights and removal.** If you are a rights holder and believe this project infringes your legitimate interests, please **open a GitHub Issue** on this repository (or use another contact method published by the maintainer). **Relevant content will be removed promptly** upon verified request.
 
 ---
 
