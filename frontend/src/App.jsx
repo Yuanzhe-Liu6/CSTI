@@ -5,6 +5,7 @@ import Quiz from './pages/Quiz.jsx';
 import Result from './pages/Result.jsx';
 import NotFound from './pages/NotFound.jsx';
 import ArchetypeImageTest from './pages/ArchetypeImageTest.jsx';
+import AxesLegend from './pages/AxesLegend.jsx';
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
       <main className="main">
         <Routes>
           <Route path="/" element={<Landing />} />
+          <Route path="/axes" element={<AxesLegend />} />
           <Route path="/quiz" element={<Quiz />} />
           <Route path="/result/:id" element={<Result />} />
           <Route path="/test/archetype-images" element={<ArchetypeImageTest />} />

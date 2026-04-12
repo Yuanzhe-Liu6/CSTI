@@ -46,10 +46,41 @@ body {
 /* ───── Header ───── */
 .site-header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
+  flex-wrap: wrap;
   padding: 1.2rem 0 0.8rem;
   border-bottom: 1px solid var(--border);
+}
+
+.site-header-left {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.site-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.header-link {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  text-decoration: none;
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid transparent;
+}
+
+.header-link:hover {
+  color: var(--accent);
+  border-color: var(--border);
+  background: var(--bg-elev);
 }
 
 .brand {
@@ -77,7 +108,6 @@ body {
   font-size: 0.78rem;
   color: var(--text-mute);
   letter-spacing: 0.05rem;
-  text-transform: uppercase;
 }
 
 .site-footer {
@@ -173,6 +203,15 @@ button:disabled {
   padding-top: 2rem;
 }
 
+.landing-headline {
+  font-size: clamp(1.35rem, 4.2vw, 1.85rem);
+  font-weight: 800;
+  line-height: 1.35;
+  margin: 0.5rem auto 0;
+  max-width: 22rem;
+  letter-spacing: 0.02rem;
+}
+
 .subtitle {
   color: var(--text-dim);
   font-family: var(--mono);
@@ -189,12 +228,297 @@ button:disabled {
   max-width: 480px;
 }
 
+.landing-blurb {
+  margin-bottom: 1.25rem;
+}
+
+/* 16 码横向滚动标签带 */
+.landing-code-marquee {
+  overflow: hidden;
+  width: 100%;
+  max-width: 36rem;
+  margin: 0 auto 1.75rem;
+  padding: 0.35rem 0;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 10%,
+    #000 90%,
+    transparent
+  );
+}
+
+.landing-code-track {
+  display: flex;
+  width: max-content;
+  gap: 0.55rem;
+  animation: landing-code-marquee 42s linear infinite;
+}
+
+.landing-code-tag {
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06rem;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  padding: 0.4rem 0.55rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0.92;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-code-track {
+    animation: none;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    max-width: 36rem;
+    margin: 0 auto;
+  }
+}
+
+@keyframes landing-code-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
 .meta {
   margin-top: 2rem;
   color: var(--text-mute);
   font-size: 0.78rem;
   font-family: var(--mono);
   letter-spacing: 0.08rem;
+}
+
+.landing-meta {
+  margin-top: 1.75rem;
+}
+
+.landing-authors {
+  margin-top: 1.25rem;
+  font-size: 0.82rem;
+  color: var(--text-mute);
+  letter-spacing: 0.04rem;
+}
+
+.text-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+  letter-spacing: 0.04rem;
+}
+
+.text-link:hover {
+  text-decoration: underline;
+}
+
+/* ───── Axes legend (/axes) ───── */
+.page-axes {
+  text-align: left;
+  max-width: 34rem;
+  margin: 0 auto;
+  padding-top: 0.5rem;
+}
+
+.page-axes .axes-eyebrow {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--text-mute);
+  letter-spacing: 0.12rem;
+  text-transform: uppercase;
+  margin: 0 0 0.35rem;
+}
+
+.page-axes .axes-title {
+  font-size: 1.45rem;
+  margin: 0 0 0.75rem;
+  line-height: 1.25;
+}
+
+.page-axes .axes-lead {
+  margin: 0 0 1.25rem;
+  color: var(--text-dim);
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+.axes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.axes-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.1rem;
+}
+
+.axes-vs-en {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  font-family: var(--mono);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  line-height: 1.35;
+  letter-spacing: 0.02rem;
+  margin-bottom: 0.45rem;
+}
+
+.axes-vs-line {
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.axes-vs-word {
+  /* 不用等宽：mono 对短词仍会分配很高的行盒，视觉上像「vs 占了一整行空白」 */
+  font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-weight: 600;
+  font-size: 0.72rem;
+  color: var(--text-mute);
+  line-height: 1;
+  letter-spacing: 0.06em;
+  margin: 0;
+  padding: 0;
+  /* 让 flex 子项高度贴近字形，避免默认 strut 再垫高一截 */
+  display: block;
+  width: max-content;
+}
+
+.axes-contrast-zh {
+  margin: 0 0 0.75rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1.4;
+}
+
+.axes-poles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.axes-poles li {
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.axes-pole-line {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.25rem;
+}
+
+.axes-letter {
+  font-family: var(--mono);
+  font-weight: 800;
+  color: var(--text);
+}
+
+.axes-pole-colon {
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--text-mute);
+  margin-right: 0.15rem;
+}
+
+.axes-pole-detail {
+  color: var(--text-dim);
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.axes-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.75rem;
+  justify-content: flex-start;
+}
+
+/* 手机横屏等「矮视口」：压缩首屏与页脚，避免一屏塞不下 */
+@media (orientation: landscape) and (max-height: 520px) {
+  .main {
+    padding: 0.45rem 0 0.85rem;
+  }
+
+  .site-header {
+    padding: 0.45rem 0 0.4rem;
+  }
+
+  .page-landing {
+    padding-top: 0.35rem;
+  }
+
+  .landing-headline {
+    font-size: 1.15rem;
+    margin-bottom: 0;
+  }
+
+  .landing-blurb {
+    margin: 0.5rem auto 0.55rem;
+    font-size: 0.86rem;
+    line-height: 1.45;
+    max-width: 40rem;
+  }
+
+  .landing-code-marquee {
+    margin-bottom: 0.65rem;
+  }
+
+  .landing-code-tag {
+    font-size: 0.68rem;
+    padding: 0.22rem 0.42rem;
+  }
+
+  .landing-meta,
+  .landing-authors {
+    margin-top: 0.45rem;
+    font-size: 0.72rem;
+  }
+
+  .landing-meta {
+    line-height: 1.45;
+  }
+
+  .site-footer {
+    padding: 0.65rem 0.75rem;
+  }
+
+  .page-axes .axes-title {
+    font-size: 1.2rem;
+  }
+
+  .page-axes .axes-lead {
+    font-size: 0.85rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .axes-card {
+    padding: 0.65rem 0.75rem;
+  }
+
+  .axes-list {
+    gap: 0.65rem;
+  }
 }
 
 /* ───── Quiz ───── */
@@ -206,6 +530,26 @@ button:disabled {
   font-size: 0.85rem;
   color: var(--text-dim);
   margin-bottom: 0.5rem;
+}
+
+.quiz-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+.quiz-axes-hint {
+  font-size: 0.75rem;
+  color: var(--text-mute);
+  text-decoration: none;
+  padding: 0.2rem 0.35rem;
+  border-radius: 3px;
+}
+
+.quiz-axes-hint:hover {
+  color: var(--accent);
+  background: var(--bg-elev);
 }
 
 .axis-tag {

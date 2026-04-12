@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { fetchQuiz, submitAnswers } from '../api.js';
 
 export default function Quiz() {
@@ -55,7 +55,12 @@ export default function Quiz() {
     <div className="page page-quiz">
       <div className="quiz-header">
         <span className="progress">{idx + 1} / {total}</span>
-        <span className="axis-tag">{q.axis}</span>
+        <div className="quiz-header-right">
+          <span className="axis-tag">{q.axis}</span>
+          <Link to="/axes" className="quiz-axes-hint">
+            轴线说明
+          </Link>
+        </div>
       </div>
       <div className="progress-bar">
         <div
@@ -87,7 +92,7 @@ export default function Quiz() {
             onClick={submit}
             disabled={!allAnswered || submitting}
           >
-            {submitting ? '计算中…' : '提交 / Submit'}
+            {submitting ? '计算中…' : '提交'}
           </button>
         ) : (
           <button
