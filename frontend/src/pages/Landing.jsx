@@ -51,7 +51,13 @@ export default function Landing() {
       </p>
 
       <p className="landing-authors">
-        作者：{AUTHORS.join(' & ')}
+        <span className="landing-authors-label">作者：</span>
+        {AUTHORS.map((name, i) => (
+          <span key={name}>
+            {i > 0 ? ' & ' : null}
+            <span className="landing-author-handle">{name}</span>
+          </span>
+        ))}
       </p>
     </div>
   );

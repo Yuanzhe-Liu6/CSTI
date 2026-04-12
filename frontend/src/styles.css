@@ -303,10 +303,25 @@ button:disabled {
 }
 
 .landing-authors {
-  margin-top: 1.25rem;
-  font-size: 0.82rem;
+  margin-top: 1.35rem;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.landing-authors-label {
   color: var(--text-mute);
+  font-size: 0.78rem;
   letter-spacing: 0.04rem;
+  margin-right: 0.4rem;
+  vertical-align: baseline;
+}
+
+.landing-author-handle {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text);
+  letter-spacing: 0.02rem;
 }
 
 .text-link {
