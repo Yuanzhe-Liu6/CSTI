@@ -9,7 +9,7 @@ const ARCHETYPE_CODES = [
 ];
 
 /** 将此处改为两位作者署名 */
-const AUTHORS = ['Will', 'Garen'];
+const AUTHORS = ['B站@willwen96', 'B站@还让不让人好好起名字'];
 
 function CodeMarquee({ codes }) {
   const row = [...codes, ...codes];
@@ -51,7 +51,7 @@ export default function Landing() {
       </p>
 
       <p className="landing-authors">
-        作者：{AUTHORS.join('、')}
+        作者：{AUTHORS.join(' & ')}
       </p>
     </div>
   );
