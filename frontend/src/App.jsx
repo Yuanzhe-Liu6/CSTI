@@ -25,7 +25,7 @@ export default function App() {
       </main>
       <footer className="site-footer">
         <div className="footer-status">
-          <span>v0.1 Beta</span>
+          <span>v0.2 Beta</span>
         </div>
         <p className="disclaimer">
           Non-commercial Project: This is a fan-made project for entertainment purposes only. 

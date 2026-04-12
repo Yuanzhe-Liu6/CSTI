@@ -130,7 +130,9 @@ export default function Result() {
         </Link>
         <ResultPoster result={result} />
       </div>
-      <p className="share-hint">分享链接: <code>{window.location.href}</code></p>
+      <p className="share-hint">
+        邀请好友测试：<code>{`${window.location.origin}/`}</code>
+      </p>
     </div>
   );
 }

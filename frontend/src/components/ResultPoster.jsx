@@ -1,10 +1,28 @@
 import { useRef, useState } from 'react';
+import QRCode from 'qrcode';
 
 const W = 1080;
 const H = 1350;
 
 const MARGIN = 72;
 const INNER_W = W - 2 * MARGIN;
+
+/**
+ * 雷达略小于早期版本；缩小半径时增大与条形区的间距，使 BAR_X 不变、与右侧标题列对齐。
+ * 关系：BAR_X = MARGIN + 2*R + PAD + GAP，令 GAP = 56 + 2*(R_REF - R)。
+ */
+const RADAR_R_REF = 148;
+const RADAR_R = 138;
+const RADAR_PAD = 8;
+const RADAR_TO_BAR_GAP = 56 + 2 * (RADAR_R_REF - RADAR_R);
+const RADAR_CX = MARGIN + RADAR_R + RADAR_PAD;
+/** 四轴分数（AXIS DOMINANCE）条形区域左缘；右侧标题列与之对齐 */
+const BAR_X = RADAR_CX + RADAR_R + RADAR_TO_BAR_GAP;
+const PHOTO_SIZE = 2 * RADAR_R;
+/** 与雷达圆外接正方形同宽，左缘与雷达圆左切线对齐 */
+const PHOTO_LEFT = RADAR_CX - RADAR_R;
+/** 主标题区（含选手图）底部与标语/金句之间的留白 */
+const HERO_TO_DESC_GAP = 64;
 
 const COLORS = {
   bg: '#0b0b0d',
@@ -25,6 +43,8 @@ const AXIS_PAIRS = [
 ];
 
 const DIMS = ['P', 'R', 'M', 'I', 'E', 'U', 'C', 'H'];
+
+const HERO_TOP = 188;
 
 /**
  * Wrap text for canvas; x is the **left** edge of each line.
@@ -128,7 +148,21 @@ function estimateWrappedLines(ctx, text, maxWidth) {
   return lines;
 }
 
-function renderPoster(ctx, result) {
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
+    img.src = src;
+  });
+}
+
+/**
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {object} result
+ * @param {{ quizUrl: string }} opts
+ */
+async function renderPoster(ctx, result, { quizUrl }) {
   const { typeCode, archetype, raw, normalized, personalRoasts } = result;
 
   ctx.fillStyle = COLORS.bg;
@@ -152,34 +186,107 @@ function renderPoster(ctx, result) {
   ctx.font = '500 22px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif';
   ctx.fillText('COUNTER-STRIKE TYPE INDICATOR', MARGIN + 105, 116);
 
-  ctx.textAlign = 'center';
+  const hasPhoto = Boolean(archetype?.pro);
+  let proImg = null;
+  if (hasPhoto) {
+    const src = `/archetypes/${archetype.pro}.webp`;
+    try {
+      proImg = await loadImage(src);
+    } catch {
+      proImg = null;
+    }
+  }
+
+  const photoLeft = PHOTO_LEFT;
+  const textLeft = proImg ? BAR_X : MARGIN;
+
+  /** 右侧标题列用 top 基线堆叠，便于与左侧照片做垂直居中（字号与早期海报一致） */
+  const eyebrowFont = '600 36px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif';
+  const codeFont = '900 118px ui-monospace, Menlo, Consolas, monospace';
+  const titleFont = '800 64px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif';
+  const proFont = '500 28px ui-monospace, Menlo, Consolas, monospace';
+
+  let textStackH = 44 + 8 + 122;
+  if (archetype) {
+    textStackH += 12 + 72 + 10 + 36;
+  }
+
+  const heroBandH = proImg ? Math.max(PHOTO_SIZE, textStackH) : textStackH;
+  const heroBandTop = HERO_TOP;
+  const photoY = proImg ? heroBandTop + (heroBandH - PHOTO_SIZE) / 2 : heroBandTop;
+  const textColumnTop = heroBandTop + (heroBandH - textStackH) / 2;
+
+  if (proImg) {
+    const r = 18;
+    ctx.save();
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(photoLeft, photoY, PHOTO_SIZE, PHOTO_SIZE, r);
+    } else {
+      ctx.moveTo(photoLeft + r, photoY);
+      ctx.arcTo(photoLeft + PHOTO_SIZE, photoY, photoLeft + PHOTO_SIZE, photoY + PHOTO_SIZE, r);
+      ctx.arcTo(photoLeft + PHOTO_SIZE, photoY + PHOTO_SIZE, photoLeft, photoY + PHOTO_SIZE, r);
+      ctx.arcTo(photoLeft, photoY + PHOTO_SIZE, photoLeft, photoY, r);
+      ctx.arcTo(photoLeft, photoY, photoLeft + PHOTO_SIZE, photoY, r);
+      ctx.closePath();
+    }
+    ctx.clip();
+    const iw = proImg.width;
+    const ih = proImg.height;
+    const scale = Math.max(PHOTO_SIZE / iw, PHOTO_SIZE / ih);
+    const dw = iw * scale;
+    const dh = ih * scale;
+    const dx = photoLeft + (PHOTO_SIZE - dw) / 2;
+    const dy = photoY + (PHOTO_SIZE - dh) / 2;
+    ctx.drawImage(proImg, dx, dy, dw, dh);
+    ctx.restore();
+
+    ctx.strokeStyle = COLORS.border;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(photoLeft, photoY, PHOTO_SIZE, PHOTO_SIZE, r);
+    } else {
+      ctx.rect(photoLeft, photoY, PHOTO_SIZE, PHOTO_SIZE);
+    }
+    ctx.stroke();
+  }
+
   ctx.shadowBlur = 0;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+
+  let ty = textColumnTop;
 
   ctx.fillStyle = COLORS.dim;
-  ctx.font = '600 36px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif';
-  ctx.fillText('我的 CSTI 类型', W / 2, 230);
+  ctx.font = eyebrowFont;
+  ctx.fillText('我的 CSTI 类型', textLeft, ty);
+  ty += 44 + 8;
 
-  ctx.shadowColor = 'rgba(245, 166, 35, 0.45)';
-  ctx.shadowBlur = 50;
+  ctx.shadowColor = 'rgba(245, 166, 35, 0.35)';
+  ctx.shadowBlur = 36;
   ctx.fillStyle = COLORS.accent;
-  ctx.font = '900 200px ui-monospace, Menlo, Consolas, monospace';
-  ctx.fillText(typeCode, W / 2, 420);
+  ctx.font = codeFont;
+  ctx.fillText(typeCode, textLeft, ty);
   ctx.shadowBlur = 0;
-
-  let nextY = 458;
+  ty += 122;
 
   if (archetype) {
+    ty += 12;
     ctx.fillStyle = COLORS.text;
-    ctx.font = '800 64px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(archetype.title, W / 2, nextY);
-    nextY += 72;
+    ctx.font = titleFont;
+    ctx.fillText(archetype.title, textLeft, ty);
+    ty += 72 + 10;
 
     ctx.fillStyle = COLORS.dim;
-    ctx.font = '500 28px ui-monospace, Menlo, Consolas, monospace';
-    ctx.fillText(`代表人物：${archetype.pro}`, W / 2, nextY);
-    nextY += 72;
+    ctx.font = proFont;
+    ctx.fillText(`代表人物：${archetype.pro}`, textLeft, ty);
+  }
 
+  const heroBottom = heroBandTop + heroBandH;
+  let nextY = heroBottom + HERO_TO_DESC_GAP;
+
+  if (archetype) {
     ctx.fillStyle = COLORS.text;
     ctx.font = '400 26px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif';
     nextY = drawWrapped(ctx, archetype.tagline, MARGIN, nextY, INNER_W, 38);
@@ -190,15 +297,20 @@ function renderPoster(ctx, result) {
     nextY = drawWrapped(ctx, `“${archetype.roast}”`, MARGIN, nextY, INNER_W, 38);
   }
 
+  /** 底部二维码（不占轴线区横向宽度） */
+  const qrSize = 84;
+  /** 二维码下缘与「扫码测试」文案之间的间距 */
+  const qrCaptionGap = 14;
+
   const vizGap = 36;
   const vizTop = nextY + vizGap;
-  const radarR = 148;
-  const radarCx = MARGIN + radarR + 8;
+  const radarCx = RADAR_CX;
+  const radarR = RADAR_R;
   const radarCy = vizTop + radarR;
 
   drawRadar(ctx, radarCx, radarCy, radarR, normalized);
 
-  const barX = radarCx + radarR + 56;
+  const barX = BAR_X;
   const barW = W - MARGIN - barX;
   let barY = vizTop + 4;
 
@@ -239,7 +351,11 @@ function renderPoster(ctx, result) {
   const barsBottom = barY + 8;
   const stripTop = Math.max(radarBottom, barsBottom) + 28;
 
+  const qrCaptionH = 22;
+  const qrBlockH = qrSize + 8 + qrCaptionGap + qrCaptionH + 10;
   const footerY = H - MARGIN;
+  const stripFooterLimit = footerY - qrBlockH - 10;
+
   const stripPad = 22;
   const headerBlockH = 52;
   const roastLineH = 28;
@@ -258,7 +374,7 @@ function renderPoster(ctx, result) {
     return h + stripPad;
   }
 
-  while (roasts.length > 0 && stripTop + measureStripHeight(roasts.length) > footerY - 6) {
+  while (roasts.length > 0 && stripTop + measureStripHeight(roasts.length) > stripFooterLimit - 6) {
     roasts = roasts.slice(0, -1);
   }
 
@@ -289,11 +405,27 @@ function renderPoster(ctx, result) {
     }
   }
 
-  ctx.fillStyle = COLORS.mute;
-  ctx.font = '500 19px ui-monospace, Menlo, Consolas, monospace';
+  const qrCanvas = document.createElement('canvas');
+  await QRCode.toCanvas(qrCanvas, quizUrl, {
+    width: qrSize,
+    margin: 1,
+    color: { dark: '#0b0b0d', light: '#ffffff' },
+  });
+
+  const qrX = W - MARGIN - qrSize;
+  const qrY = footerY - qrBlockH;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(qrX - 5, qrY - 5, qrSize + 10, qrSize + 10);
+  ctx.strokeStyle = COLORS.border;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(qrX - 5, qrY - 5, qrSize + 10, qrSize + 10);
+  ctx.drawImage(qrCanvas, qrX, qrY);
+
+  ctx.fillStyle = COLORS.dim;
+  ctx.font = '500 18px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif';
   ctx.textAlign = 'center';
-  ctx.textBaseline = 'alphabetic';
-  ctx.fillText('csti · v0.1 · share your type', W / 2, footerY);
+  ctx.textBaseline = 'top';
+  ctx.fillText('扫码测试', qrX + qrSize / 2, qrY + qrSize + qrCaptionGap);
 }
 
 export default function ResultPoster({ result }) {
@@ -307,7 +439,8 @@ export default function ResultPoster({ result }) {
       canvas.width = W;
       canvas.height = H;
       const ctx = canvas.getContext('2d');
-      renderPoster(ctx, result);
+      const quizUrl = `${window.location.origin}/`;
+      await renderPoster(ctx, result, { quizUrl });
 
       canvas.toBlob((blob) => {
         if (!blob) return;
