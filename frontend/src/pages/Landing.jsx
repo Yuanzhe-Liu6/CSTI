@@ -30,7 +30,7 @@ export default function Landing() {
   return (
     <div className="page page-landing">
       <h1 className="landing-headline">
-        CSTI：你的竞技人格模型
+        CSTI：CS 竞技人格模型
       </h1>
       <p className="blurb landing-blurb">
         基于 16 个职业选手原型的心理量化测试。
