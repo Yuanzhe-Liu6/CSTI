@@ -75,10 +75,14 @@ export default function Result() {
             ['E', 'U'],
             ['C', 'H'],
           ].map(([a, b]) => {
-            const pct = Math.round((normalized[a] ?? 0.5) * 100);
+            const na = normalized[a] ?? 0.5;
+            const nb = normalized[b] ?? 0.5;
+            const dominant = na >= nb ? a : b;
+            const loser = dominant === a ? b : a;
+            const domScore = dominant === a ? na : nb;
+            const pct = Math.round(domScore * 100);
             const axisKey = `${a}${b}`;
             const isExpanded = expandedAxis === axisKey;
-            const dominant = pct >= 50 ? a : b;
             return (
               <li key={a} className={`axis-item${isExpanded ? ' expanded' : ''}`}>
                 <div
@@ -86,22 +90,22 @@ export default function Result() {
                   onClick={() => setExpandedAxis(isExpanded ? null : axisKey)}
                   title="点击查看维度说明"
                 >
-                  <span className={pct >= 50 ? 'axis-dominant' : ''}>{a} {raw[a]}</span>
+                  <span className="axis-dominant">{dominant} {raw[dominant]}</span>
                   <span className="axis-tap-hint">{isExpanded ? '▾' : '▸'}</span>
-                  <span className={pct < 50 ? 'axis-dominant' : ''}>{raw[b]} {b}</span>
+                  <span>{loser} {raw[loser]}</span>
                 </div>
                 <div className="bar">
                   <div className="bar-fill" style={{ width: `${pct}%` }} />
                 </div>
                 {isExpanded && (
                   <div className="axis-explain">
-                    <div className={`axis-explain-item${dominant === a ? ' highlight' : ''}`}>
-                      <strong>{AXIS_INFO[a].label}</strong>
-                      <p>{AXIS_INFO[a].desc}</p>
+                    <div className="axis-explain-item highlight">
+                      <strong>{AXIS_INFO[dominant].label}</strong>
+                      <p>{AXIS_INFO[dominant].desc}</p>
                     </div>
-                    <div className={`axis-explain-item${dominant === b ? ' highlight' : ''}`}>
-                      <strong>{AXIS_INFO[b].label}</strong>
-                      <p>{AXIS_INFO[b].desc}</p>
+                    <div className="axis-explain-item">
+                      <strong>{AXIS_INFO[loser].label}</strong>
+                      <p>{AXIS_INFO[loser].desc}</p>
                     </div>
                   </div>
                 )}

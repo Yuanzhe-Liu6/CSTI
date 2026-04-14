@@ -321,15 +321,20 @@ async function renderPoster(ctx, result, { quizUrl }) {
   barY += 28;
 
   for (const [a, b, labelA, labelB] of AXIS_PAIRS) {
-    const dom = normalized[a] ?? 0.5;
-    const pct = Math.round(dom * 100);
+    const na = normalized[a] ?? 0.5;
+    const nb = normalized[b] ?? 0.5;
+    const dominant = na >= nb ? a : b;
+    const loser = dominant === a ? b : a;
+    const labelDom = dominant === a ? labelA : labelB;
+    const labelLoser = dominant === a ? labelB : labelA;
+    const pct = Math.round((dominant === a ? na : nb) * 100);
 
     ctx.fillStyle = COLORS.text;
     ctx.font = '700 21px ui-monospace, Menlo, Consolas, monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(`${labelA} ${raw[a]}`, barX, barY);
+    ctx.fillText(`${labelDom} ${raw[dominant]}`, barX, barY);
     ctx.textAlign = 'right';
-    ctx.fillText(`${raw[b]} ${labelB}`, barX + barW, barY);
+    ctx.fillText(`${raw[loser]} ${labelLoser}`, barX + barW, barY);
     barY += 13;
 
     ctx.fillStyle = COLORS.panel;
