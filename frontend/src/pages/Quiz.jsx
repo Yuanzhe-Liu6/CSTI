@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { fetchQuiz, submitAnswers } from '../api.js';
 
 export default function Quiz() {
@@ -9,6 +9,9 @@ export default function Quiz() {
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState({}); // questionId -> optionIndex
   const [submitting, setSubmitting] = useState(false);
+  const [tiebreaker, setTiebreaker] = useState(null);
+  const [pendingMainAnswers, setPendingMainAnswers] = useState(null);
+  const [tiebreakerAnswers, setTiebreakerAnswers] = useState([]);
 
   useEffect(() => {
     fetchQuiz()
@@ -35,20 +38,45 @@ export default function Quiz() {
     if (idx > 0) setIdx(idx - 1);
   };
 
-  const submit = async () => {
-    if (!allAnswered || submitting) return;
+  const runSubmit = async (mainPayload, tieList) => {
+    if (submitting) return;
     setSubmitting(true);
+    setError(null);
     try {
-      const payload = questions.map((q) => ({
-        questionId: q.id,
-        optionIndex: answers[q.id],
-      }));
-      const result = await submitAnswers(payload);
+      const result = await submitAnswers({
+        answers: mainPayload,
+        tiebreakers: tieList,
+      });
+      if (result.needsTiebreak) {
+        setPendingMainAnswers(mainPayload);
+        setTiebreakerAnswers(tieList);
+        setTiebreaker(result.tiebreaker);
+        setSubmitting(false);
+        return;
+      }
       navigate(`/result/${result.id}`, { state: { result } });
     } catch (e) {
-      setError(e.message);
+      setError(e.message ?? String(e));
       setSubmitting(false);
     }
+  };
+
+  const submit = async () => {
+    if (!allAnswered || submitting) return;
+    const payload = questions.map((q) => ({
+      questionId: q.id,
+      optionIndex: answers[q.id],
+    }));
+    await runSubmit(payload, []);
+  };
+
+  const submitTiebreak = async (optionIndex) => {
+    if (!tiebreaker || pendingMainAnswers == null || submitting) return;
+    const next = [
+      ...tiebreakerAnswers,
+      { questionId: tiebreaker.id, optionIndex },
+    ];
+    await runSubmit(pendingMainAnswers, next);
   };
 
   return (
@@ -98,6 +126,32 @@ export default function Quiz() {
           </button>
         )}
       </div>
+
+      {tiebreaker ? (
+        <div className="tiebreak-backdrop" role="dialog" aria-modal="true" aria-labelledby="tiebreak-title">
+          <div className="tiebreak-panel">
+            <p id="tiebreak-title" className="tiebreak-title">平局加试（二选一）</p>
+            <p className="tiebreak-hint">
+              有维度刚好50/50，再选一项即可生成结果（一道题也可能同时打破多个平局）。
+            </p>
+            <h2 className="scenario tiebreak-scenario">{tiebreaker.scenario}</h2>
+            <ul className="options">
+              {tiebreaker.options.map((opt) => (
+                <li key={opt.index}>
+                  <button
+                    type="button"
+                    className="option"
+                    onClick={() => submitTiebreak(opt.index)}
+                    disabled={submitting}
+                  >
+                    {opt.text}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

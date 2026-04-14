@@ -4,6 +4,9 @@ const AXES = ['PR', 'MI', 'EU', 'CH'];
 const LETTERS = { PR: ['P', 'R'], MI: ['M', 'I'], EU: ['E', 'U'], CH: ['C', 'H'] };
 const DIMS = ['P', 'R', 'M', 'I', 'E', 'U', 'C', 'H'];
 
+/** Epsilon for axis tie: normalized first pole === 0.5, or both raw totals zero. */
+const AXIS_TIE_EPS = 1e-9;
+
 /** How many scenarios to draw from each axis pool (4 axes → 20 total). */
 export const QUESTIONS_PER_AXIS = 5;
 
@@ -74,12 +77,140 @@ export function normalizeAxes(raw) {
   return out;
 }
 
+/**
+ * Axes where each pole is exactly balanced (normalized === 0.5), including the
+ * both-zero case for that axis.
+ */
+export function getTiedAxes(raw) {
+  const tied = [];
+  for (const axis of AXES) {
+    const [a, b] = LETTERS[axis];
+    const tot = raw[a] + raw[b];
+    if (tot <= 0) {
+      tied.push(axis);
+      continue;
+    }
+    const na = raw[a] / tot;
+    if (Math.abs(na - 0.5) <= AXIS_TIE_EPS) tied.push(axis);
+  }
+  return tied;
+}
+
+/** Per-option score skew on this question's axis: (poleA − poleB) × weight. */
+function optionAxisSkew(q, optionIndex) {
+  const [poleA, poleB] = LETTERS[q.axis];
+  const opt = q.options[optionIndex];
+  const w = q.weight ?? 1;
+  const va = opt.vector?.[poleA] ?? 0;
+  const vb = opt.vector?.[poleB] ?? 0;
+  return (va - vb) * w;
+}
+
+/**
+ * Pick two option indices (original indices into q.options) for a binary tiebreak.
+ * Prefer extremes on this question's axis; if all options tie on that axis, pick the
+ * pair whose vectors differ most across all axes (one answer can break several ties).
+ */
+export function pickTwoOptionIndicesForTiebreak(q) {
+  const n = q.options.length;
+  if (n < 2) return null;
+
+  const skews = [];
+  for (let i = 0; i < n; i++) skews.push({ i, d: optionAxisSkew(q, i) });
+
+  let minI = 0;
+  let maxI = 0;
+  for (let k = 1; k < skews.length; k++) {
+    if (skews[k].d < skews[minI].d) minI = k;
+    if (skews[k].d > skews[maxI].d) maxI = k;
+  }
+
+  if (Math.abs(skews[minI].d - skews[maxI].d) > AXIS_TIE_EPS) {
+    const a = skews[minI].i;
+    const b = skews[maxI].i;
+    return a < b ? [a, b] : [b, a];
+  }
+
+  const w = q.weight ?? 1;
+  let best = [0, 1];
+  let bestScore = -1;
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      let s = 0;
+      for (const axis of AXES) {
+        const [x, y] = LETTERS[axis];
+        const di = ((q.options[i].vector?.[x] ?? 0) - (q.options[i].vector?.[y] ?? 0)) * w;
+        const dj = ((q.options[j].vector?.[x] ?? 0) - (q.options[j].vector?.[y] ?? 0)) * w;
+        s += Math.abs(di - dj);
+      }
+      if (s > bestScore) {
+        bestScore = s;
+        best = [i, j];
+      }
+    }
+  }
+  return best;
+}
+
+/**
+ * Sample a tiebreaker question from axes that are still tied (excluding already-used ids).
+ * Returns a public shape with exactly two options (original option indices preserved).
+ */
+export function pickTiebreakerQuestion(tiedAxes, usedQuestionIds) {
+  if (!tiedAxes.length) return null;
+  const used = new Set(usedQuestionIds);
+  const seen = new Set();
+  const pool = [];
+  for (const axis of tiedAxes) {
+    for (const q of byAxis.get(axis) || []) {
+      if (used.has(q.id) || seen.has(q.id)) continue;
+      seen.add(q.id);
+      pool.push(q);
+    }
+  }
+  shuffle(pool);
+  for (const q of pool) {
+    const pair = pickTwoOptionIndicesForTiebreak(q);
+    if (!pair) continue;
+    const [i0, i1] = pair;
+    return {
+      id: q.id,
+      axis: q.axis,
+      scenario: q.scenario,
+      options: [
+        { index: i0, text: q.options[i0].text },
+        { index: i1, text: q.options[i1].text },
+      ],
+    };
+  }
+  return null;
+}
+
 /** Build the 4-letter type code from raw scores. Ties favor the first letter. */
 export function buildTypeCode(raw) {
   return AXES.map((axis) => {
     const [a, b] = LETTERS[axis];
     return raw[a] >= raw[b] ? a : b;
   }).join('');
+}
+
+/**
+ * When no tiebreaker can be offered, fall back to the legacy rule (left pole wins)
+ * and compute type / roasts for persistence.
+ */
+export function finalizeTiesWithLeftBias(raw) {
+  const normalized = normalizeAxes(raw);
+  const typeCode = buildTypeCode(raw);
+  const archetype = archetypeByCode.get(typeCode) || null;
+  const personalRoasts = matchRoasts(normalized);
+  return {
+    normalized,
+    typeCode,
+    archetype,
+    personalRoasts,
+    tiedAxes: [],
+    needsTiebreak: false,
+  };
 }
 
 /** Match roasts whose conditions are all satisfied by the normalized scores. */
@@ -118,8 +249,10 @@ function evalCondition(val, expr) {
 export function scoreAnswers(answers) {
   const raw = computeRawScores(answers);
   const normalized = normalizeAxes(raw);
-  const typeCode = buildTypeCode(raw);
-  const archetype = archetypeByCode.get(typeCode) || null;
-  const personalRoasts = matchRoasts(normalized);
-  return { raw, normalized, typeCode, archetype, personalRoasts };
+  const tiedAxes = getTiedAxes(raw);
+  const needsTiebreak = tiedAxes.length > 0;
+  const typeCode = needsTiebreak ? null : buildTypeCode(raw);
+  const archetype = typeCode ? archetypeByCode.get(typeCode) || null : null;
+  const personalRoasts = needsTiebreak ? [] : matchRoasts(normalized);
+  return { raw, normalized, typeCode, archetype, personalRoasts, tiedAxes, needsTiebreak };
 }

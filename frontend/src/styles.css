@@ -762,6 +762,52 @@ button:disabled {
   gap: 1rem;
 }
 
+.tiebreak-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: fadeIn 0.15s ease;
+}
+
+.tiebreak-panel {
+  width: 100%;
+  max-width: min(100%, 520px);
+  max-height: min(90vh, 640px);
+  overflow-y: auto;
+  background: var(--bg-elev);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  padding: 1.25rem 1.35rem 1.5rem;
+  text-align: left;
+  animation: slideUp 0.2s ease;
+}
+
+.tiebreak-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.14rem;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-family: var(--mono);
+}
+
+.tiebreak-hint {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-dim);
+}
+
+.tiebreak-scenario {
+  margin-top: 0.25rem;
+}
+
 /* ───── Result ───── */
 .page-result {
   text-align: center;

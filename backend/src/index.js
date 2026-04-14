@@ -3,7 +3,12 @@ import express from 'express';
 import cors from 'cors';
 import { randomUUID } from 'node:crypto';
 
-import { sampleQuiz, scoreAnswers } from './scoring.js';
+import {
+  sampleQuiz,
+  scoreAnswers,
+  pickTiebreakerQuestion,
+  finalizeTiesWithLeftBias,
+} from './scoring.js';
 import { saveResult, getResult, getStats, saveFeedback } from './store.js';
 
 const FEEDBACK_TAGS = new Set([
@@ -34,25 +39,66 @@ app.get('/api/quiz', (req, res) => {
   res.json({ questions: sampleQuiz() });
 });
 
-// POST /api/submit — body: { answers: [{ questionId, optionIndex }] }
+const MAX_TIE_BREAKERS = 24;
+
+function normalizeAnswerEntries(arr, label) {
+  return arr.map((a, i) => {
+    if (a == null || typeof a !== 'object') {
+      throw new Error(`Invalid ${label} at index ${i}`);
+    }
+    const questionId = String(a.questionId);
+    const optionIndex = Number(a.optionIndex);
+    if (!Number.isInteger(optionIndex) || optionIndex < 0) {
+      throw new Error(`Invalid optionIndex for ${questionId}`);
+    }
+    return { questionId, optionIndex };
+  });
+}
+
+// POST /api/submit — body: { answers: [...], tiebreakers?: [...] }
 app.post('/api/submit', async (req, res) => {
-  const { answers } = req.body ?? {};
+  const body = req.body ?? {};
+  const answers = body.answers;
+  const tiebreakersRaw = body.tiebreakers;
   if (!Array.isArray(answers) || answers.length === 0) {
     return res.status(400).json({ error: 'answers must be a non-empty array' });
   }
   try {
-    const normalizedAnswers = answers.map((a, i) => {
-      if (a == null || typeof a !== 'object') {
-        throw new Error(`Invalid answer at index ${i}`);
+    const normalizedAnswers = normalizeAnswerEntries(answers, 'answer');
+    const normalizedTiebreakers = Array.isArray(tiebreakersRaw)
+      ? normalizeAnswerEntries(tiebreakersRaw, 'tiebreaker')
+      : [];
+    if (normalizedTiebreakers.length > MAX_TIE_BREAKERS) {
+      return res.status(400).json({ error: 'too many tiebreaker answers' });
+    }
+    const tbIds = normalizedTiebreakers.map((t) => t.questionId);
+    if (new Set(tbIds).size !== tbIds.length) {
+      return res.status(400).json({ error: 'duplicate tiebreaker questionId' });
+    }
+    const mainIds = new Set(normalizedAnswers.map((a) => a.questionId));
+    if (tbIds.some((id) => mainIds.has(id))) {
+      return res.status(400).json({ error: 'tiebreaker must not repeat a main-quiz question' });
+    }
+
+    const merged = [...normalizedAnswers, ...normalizedTiebreakers];
+    let scored = scoreAnswers(merged);
+
+    if (scored.needsTiebreak) {
+      const usedIds = merged.map((a) => a.questionId);
+      const tiebreaker =
+        normalizedTiebreakers.length < MAX_TIE_BREAKERS
+          ? pickTiebreakerQuestion(scored.tiedAxes, usedIds)
+          : null;
+      if (tiebreaker) {
+        return res.json({
+          needsTiebreak: true,
+          tiedAxes: scored.tiedAxes,
+          tiebreaker,
+        });
       }
-      const questionId = String(a.questionId);
-      const optionIndex = Number(a.optionIndex);
-      if (!Number.isInteger(optionIndex) || optionIndex < 0) {
-        throw new Error(`Invalid optionIndex for ${questionId}`);
-      }
-      return { questionId, optionIndex };
-    });
-    const scored = scoreAnswers(normalizedAnswers);
+      scored = { raw: scored.raw, ...finalizeTiesWithLeftBias(scored.raw) };
+    }
+
     const id = randomUUID();
     const record = {
       id,
@@ -62,7 +108,7 @@ app.post('/api/submit', async (req, res) => {
       normalized: scored.normalized,
       archetype: scored.archetype,
       personalRoasts: scored.personalRoasts,
-      answers: normalizedAnswers,
+      answers: merged,
     };
     await saveResult(record);
     const { answers: _storedAnswers, ...publicRecord } = record;
