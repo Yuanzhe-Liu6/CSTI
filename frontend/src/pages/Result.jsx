@@ -79,8 +79,9 @@ export default function Result() {
             const nb = normalized[b] ?? 0.5;
             const dominant = na >= nb ? a : b;
             const loser = dominant === a ? b : a;
-            const domScore = dominant === a ? na : nb;
-            const pct = Math.round(domScore * 100);
+            const domScore = (normalized[dominant] * 10).toFixed(1);
+            const loserScore = (normalized[loser] * 10).toFixed(1);
+            const pct = Math.round(normalized[dominant] * 100);
             const axisKey = `${a}${b}`;
             const isExpanded = expandedAxis === axisKey;
             return (
@@ -90,9 +91,9 @@ export default function Result() {
                   onClick={() => setExpandedAxis(isExpanded ? null : axisKey)}
                   title="点击查看维度说明"
                 >
-                  <span className="axis-dominant">{dominant} {raw[dominant]}</span>
+                  <span className="axis-dominant">{dominant} {domScore}</span>
                   <span className="axis-tap-hint">{isExpanded ? '▾' : '▸'}</span>
-                  <span>{loser} {raw[loser]}</span>
+                  <span>{loserScore} {loser}</span>
                 </div>
                 <div className="bar">
                   <div className="bar-fill" style={{ width: `${pct}%` }} />
